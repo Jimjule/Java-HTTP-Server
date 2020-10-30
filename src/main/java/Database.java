@@ -52,4 +52,20 @@ public class Database {
             e.printStackTrace();
         }
     }
+
+    public boolean authenticateUser(String email, String password) {
+        boolean authenticated = false;
+        try {
+            PreparedStatement authenticate = connection.prepareStatement("SELECT (password = ?) AS match FROM shopping_app_user_details WHERE email = ?;");
+            authenticate.setString(1, password);
+            authenticate.setString(2, email);
+            ResultSet resultSet = authenticate.executeQuery();
+            resultSet.next();
+            authenticated = resultSet.getBoolean(1);
+            authenticate.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return authenticated;
+    }
 }

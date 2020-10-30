@@ -50,7 +50,6 @@ public class DatabaseTest {
     public void createUserTest() throws SQLException {
         database.createUser("now@email.exists", "pinskydan");
         assertEquals(1, countUsers());
-        assertFalse(database.queryUserExists("should@never.exist", 0));
         assertTrue(database.queryUserExists("now@email.exists", 0));
     }
 
@@ -59,5 +58,23 @@ public class DatabaseTest {
         database.createUser("state@is.fleeting", "cromslor");
         database.deleteUserByEmail("state@is.fleeting");
         assertFalse(database.queryUserExists("state@is.fleeting", 0));
+    }
+
+    @Test
+    public void failAuthenticateUserTest() throws SQLException {
+        database.createUser("test@here.today", "aw beans");
+        boolean authenticated;
+        authenticated = database.authenticateUser("test@here.today", "password?");
+        assertFalse(authenticated);
+        database.deleteUserByEmail("test@here.today");
+    }
+
+    @Test
+    public void passAuthenticateUserTest() throws SQLException {
+        database.createUser("test@gone.tomorrow", "huzzah");
+        boolean authenticated;
+        authenticated = database.authenticateUser("test@gone.tomorrow", "huzzah");
+        assertTrue(authenticated);
+        database.deleteUserByEmail("test@gone.tomorrow");
     }
 }

@@ -1,19 +1,29 @@
+import org.json.JSONException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import org.skyscreamer.jsonassert.JSONAssert;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DatabaseTest {
 
     private Database database;
     private Connection connection;
     private Statement statement;
+
+    private final String createUserEmail = "now@email.exists";
+    private final String createUserPassword = "authentify";
+    private final String noSuchEmail = "state@is.fleeting";
+    private final String noSuchPassword = "1234";
 
     @BeforeEach
     public void setUp() throws SQLException {
@@ -42,39 +52,49 @@ public class DatabaseTest {
     }
 
     @Test
-    public void queryUserExistsTest() throws SQLException {
-        assertFalse(database.queryUserExists("no@such.email", 0));
+    public void queryUserExistsTest() {
+        assertFalse(database.queryUserExists(noSuchEmail, 0));
     }
 
     @Test
     public void createUserTest() throws SQLException {
-        database.createUser("now@email.exists", "pinskydan");
+        database.createUser(createUserEmail, createUserPassword);
         assertEquals(1, countUsers());
-        assertTrue(database.queryUserExists("now@email.exists", 0));
+        assertTrue(database.queryUserExists(createUserEmail, 0));
     }
 
     @Test
-    public void deleteUserTest() throws SQLException {
-        database.createUser("state@is.fleeting", "cromslor");
-        database.deleteUserByEmail("state@is.fleeting");
-        assertFalse(database.queryUserExists("state@is.fleeting", 0));
+    public void deleteUserTest() {
+        database.createUser(createUserEmail, createUserPassword);
+        database.deleteUserByEmail(createUserEmail);
+        assertFalse(database.queryUserExists(createUserEmail, 0));
     }
 
     @Test
-    public void failAuthenticateUserTest() throws SQLException {
-        database.createUser("test@here.today", "aw beans");
-        boolean authenticated;
-        authenticated = database.authenticateUser("test@here.today", "password?");
+    public void failAuthenticateUserTest() {
+        database.createUser(createUserEmail, createUserPassword);
+        boolean authenticated = database.authenticateUser(createUserEmail, noSuchPassword);
         assertFalse(authenticated);
-        database.deleteUserByEmail("test@here.today");
     }
 
     @Test
-    public void passAuthenticateUserTest() throws SQLException {
-        database.createUser("test@gone.tomorrow", "huzzah");
-        boolean authenticated;
-        authenticated = database.authenticateUser("test@gone.tomorrow", "huzzah");
+    public void passAuthenticateUserTest() {
+        database.createUser(createUserEmail, createUserPassword);
+        boolean authenticated = database.authenticateUser(createUserEmail, createUserPassword);
         assertTrue(authenticated);
-        database.deleteUserByEmail("test@gone.tomorrow");
+    }
+
+    @Test
+    public void getUserDetailsTest() throws JSONException {
+        database.createUser(createUserEmail, createUserPassword);
+        String actual = String.valueOf(database.getUserDetails(createUserEmail));
+
+        JSONAssert.assertEquals("{address: null}", actual, false);
+        JSONAssert.assertEquals("{full_name: null}", actual, false);
+        JSONAssert.assertEquals("{month: 0}", actual, false);
+        JSONAssert.assertEquals("{year: 0}", actual, false);
+        JSONAssert.assertEquals("{postcode: null}", actual, false);
+        JSONAssert.assertEquals("{day: 0}", actual, false);
+        JSONAssert.assertEquals("{email: " + createUserEmail + "}", actual, false);
     }
 }

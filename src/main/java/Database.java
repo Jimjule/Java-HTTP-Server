@@ -1,4 +1,9 @@
-import java.sql.*;
+import org.json.simple.JSONObject;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Database {
 
@@ -67,5 +72,28 @@ public class Database {
             e.printStackTrace();
         }
         return authenticated;
+    }
+
+    public JSONObject getUserDetails(String email) {
+        JSONObject userDetails = new JSONObject();
+        try {
+            PreparedStatement getDetails = connection.prepareStatement("SELECT id, email, full_name, address, postcode, dob, EXTRACT(year FROM dob) as year, EXTRACT(month FROM dob) as month, EXTRACT(day FROM dob) as day FROM shopping_app_user_details WHERE email = ?;");
+            getDetails.setString(1, email);
+            ResultSet resultSet = getDetails.executeQuery();
+            while (resultSet.next()) {
+                userDetails.put("address", resultSet.getString("address"));
+                userDetails.put("day", resultSet.getInt("day"));
+                userDetails.put("email", resultSet.getString("email"));
+                userDetails.put("full_name", resultSet.getString("full_name"));
+                userDetails.put("id", resultSet.getInt("id"));
+                userDetails.put("month", resultSet.getInt("month"));
+                userDetails.put("postcode", resultSet.getString("postcode"));
+                userDetails.put("year", resultSet.getInt("year"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return userDetails;
     }
 }

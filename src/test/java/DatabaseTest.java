@@ -5,10 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import org.skyscreamer.jsonassert.JSONAssert;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,11 +36,25 @@ public class DatabaseTest {
         statement.execute(sql);
     }
 
-    public int countUsers() throws SQLException {
+    private int countUsers() throws SQLException {
         String getCount = "SELECT * FROM shopping_app_user_details;";
         ResultSet countAll = statement.executeQuery(getCount);
         countAll.next();
         return countAll.getRow();
+    }
+
+    private int getUserId(String email) throws SQLException {
+        PreparedStatement getID = connection.prepareStatement("SELECT ID FROM shopping_app_user_details WHERE email = ?");
+        getID.setString(1, email);
+        ResultSet resultSet = getID.executeQuery();
+        resultSet.next();
+        int id = resultSet.getInt(1);
+        getID.close();
+        return id;
+    }
+
+    private String getUserDetails(int id) {
+        return String.valueOf(database.getUserDetails(id));
     }
 
     @Test
@@ -85,16 +96,46 @@ public class DatabaseTest {
     }
 
     @Test
-    public void getUserDetailsTest() throws JSONException {
+    public void getUserDetailsTest() throws JSONException, SQLException {
         database.createUser(createUserEmail, createUserPassword);
-        String actual = String.valueOf(database.getUserDetails(createUserEmail));
-
+        int id = getUserId(createUserEmail);
+        String actual = getUserDetails(id);
         JSONAssert.assertEquals("{address: null}", actual, false);
         JSONAssert.assertEquals("{full_name: null}", actual, false);
         JSONAssert.assertEquals("{month: 0}", actual, false);
         JSONAssert.assertEquals("{year: 0}", actual, false);
+        JSONAssert.assertEquals("{id: " + getUserId(createUserEmail) + "}", actual, false);
         JSONAssert.assertEquals("{postcode: null}", actual, false);
         JSONAssert.assertEquals("{day: 0}", actual, false);
         JSONAssert.assertEquals("{email: " + createUserEmail + "}", actual, false);
+    }
+
+    @Test
+    public void editUserNameTest() throws SQLException, JSONException {
+        database.createUser(createUserEmail, createUserPassword);
+        int id = getUserId(createUserEmail);
+        database.editUserDetails(id, "full_name", "Cromslor Pinskydan");
+        String actual = getUserDetails(id);
+        JSONAssert.assertEquals("{full_name: Cromslor Pinskydan}", actual, false);
+    }
+
+    @Test
+    public void editUserEmailTest() throws SQLException, JSONException {
+        database.createUser(createUserEmail, createUserPassword);
+        int id = getUserId(createUserEmail);
+        database.editUserDetails(id, "email", "test@edit.email");
+        String actual = getUserDetails(id);
+        JSONAssert.assertEquals("{email: test@edit.email}", actual, false);
+    }
+
+    @Test
+    public void editUserDOBTest() throws SQLException, JSONException {
+        database.createUser(createUserEmail, createUserPassword);
+        int id = getUserId(createUserEmail);
+        database.editUserDetails(id, "dob", "1999-02-01");
+        String actual = getUserDetails(id);
+        JSONAssert.assertEquals("{month: 2}", actual, false);
+        JSONAssert.assertEquals("{day: 1}", actual, false);
+        JSONAssert.assertEquals("{year: 1999}", actual, false);
     }
 }

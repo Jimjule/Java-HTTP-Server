@@ -1,9 +1,7 @@
 import org.json.simple.JSONObject;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.Optional;
 
 public class Database {
 
@@ -21,11 +19,7 @@ public class Database {
             queryEmail.setInt(2, id);
             ResultSet resultSet = queryEmail.executeQuery();
 
-            if(resultSet.next()) {
-                exists = true;
-            } else {
-                exists = false;
-            }
+            exists = resultSet.next();
 
             queryEmail.close();
             return exists;
@@ -74,11 +68,11 @@ public class Database {
         return authenticated;
     }
 
-    public JSONObject getUserDetails(String email) {
+    public JSONObject getUserDetails(int id) {
         JSONObject userDetails = new JSONObject();
         try {
-            PreparedStatement getDetails = connection.prepareStatement("SELECT id, email, full_name, address, postcode, dob, EXTRACT(year FROM dob) as year, EXTRACT(month FROM dob) as month, EXTRACT(day FROM dob) as day FROM shopping_app_user_details WHERE email = ?;");
-            getDetails.setString(1, email);
+            PreparedStatement getDetails = connection.prepareStatement("SELECT id, email, full_name, address, postcode, dob, EXTRACT(year FROM dob) as year, EXTRACT(month FROM dob) as month, EXTRACT(day FROM dob) as day FROM shopping_app_user_details WHERE id = ?;");
+            getDetails.setInt(1, id);
             ResultSet resultSet = getDetails.executeQuery();
             while (resultSet.next()) {
                 userDetails.put("address", resultSet.getString("address"));
@@ -95,5 +89,26 @@ public class Database {
         }
 
         return userDetails;
+    }
+
+    public void editUserDetails(int id, String field, String value) {
+        try {
+            PreparedStatement editDetail = connection.prepareStatement("UPDATE shopping_app_user_details SET " + field + " = ? WHERE id = ?;");
+            checkFieldType(field, value, editDetail);
+            editDetail.setInt(2, id);
+            editDetail.execute();
+            editDetail.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void checkFieldType(String field, String value, PreparedStatement statement) throws SQLException {
+        if (field.equals("dob")) {
+            Date date = java.sql.Date.valueOf(value);
+            statement.setDate(1, date);
+        } else {
+            statement.setString(1, value);
+        }
     }
 }
